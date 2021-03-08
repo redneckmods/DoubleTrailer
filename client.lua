@@ -1,9 +1,20 @@
 local trailerEnt = nil
-RegisterCommand('dblTrailer', function(source, args, rawCommand)
+local trailers = {}
+for k,v in ipairs(config.trailers) do
+    table.insert(trailers, GetHashKey(v))
+end
+
+local boats = {}
+for k,v in ipairs(config.boats) do
+    table.insert(boats, GetHashKey(v))
+end
+
+
+
+RegisterCommand(config.spawnCommand, function(source, args, rawCommand)
     local x,y,z = table.unpack(GetOffsetFromEntityInWorldCoords(PlayerPedId(), 0.0, 8.0, 0.5))
-    local veh = 'doubletrailer'
-    vehiclehash = GetHashKey(veh)
-    boatHash  = GetHashKey('zodiac')
+    local vehiclehash = GetHashKey(config.default.trailer)
+    local boatHash  = GetHashKey(config.default.boat)
         RequestModel(vehiclehash)
         RequestModel(boatHash)
         Citizen.CreateThread(function() 
@@ -12,7 +23,7 @@ RegisterCommand('dblTrailer', function(source, args, rawCommand)
                 waiting = waiting + 100
                 Citizen.Wait(100)
                 if waiting > 5000 then
-                    ShowNotification("~r~Could not load the vehicle model in time, a crash was prevented.")
+                    ShowNotification(config.safetySpawn)
                     break
                 end
             end
@@ -20,8 +31,8 @@ RegisterCommand('dblTrailer', function(source, args, rawCommand)
             local boatLower = CreateVehicle(boatHash, x, y, z,0.0, 1, 1)
             local boatUpper = CreateVehicle(boatHash, x, y, z,0.0, 1, 1)
             SetEntityRotation(vehiclecreated,180.0,180.0,0.0,0,true)
-            AttachEntityToEntity(boatLower,vehiclecreated,GetEntityBoneIndexByName(vehiclecreated,'misc_a'),0.0,-1.0,-0.2,0.0,0.0,0.0,0,0,1,0,1,1)
-            AttachEntityToEntity(boatUpper,vehiclecreated,GetEntityBoneIndexByName(vehiclecreated,'misc_b'),0.0,-1.0,-0.2,0.0,0.0,0.0,0,0,1,0,1,1)
+            AttachEntityToEntity(boatLower,vehiclecreated,GetEntityBoneIndexByName(vehiclecreated,'misc_a'),config.offset.bottom,0.0,0.0,0.0,0,0,1,0,1,1)
+            AttachEntityToEntity(boatUpper,vehiclecreated,GetEntityBoneIndexByName(vehiclecreated,'misc_b'),config.offset.top,0.0,0.0,0.0,0,0,1,0,1,1)
 
             SetModelAsNoLongerNeeded(veh)
             SetModelAsNoLongerNeeded(boatHash)
@@ -30,18 +41,18 @@ end)
 
 Citizen.CreateThread(function()
     while true do
-        waitTime = 500
+        waitTime = 750
         if not IsPedInAnyVehicle(PlayerPedId(), true) then
             local hit, coords, entity = RayCastGamePlayCamera(10.0)
             if hit == 1 then
                 if GetEntityType(entity) ~= 0 then
-                    if GetEntityModel(entity)  == GetHashKey('zodiac') then
-                        waitTime = 1
+                    if has_value(boats,GetEntityModel(entity)) then
+                        waitTime = 8
                         if IsEntityAttachedToAnyVehicle(entity) then
-                            DrawMessage('Druk op ~g~E~w~ a bla bla')
-                            if IsControlJustPressed(0,38) then
-                                if GetEntityModel(GetEntityAttachedTo(entity)) == GetHashKey('doubletrailer') then
-                                    AttachEntityToEntity(entity,GetEntityAttachedTo(entity),GetEntityBoneIndexByName(GetEntityAttachedTo(entity),'misc_a'),0.0,-7.5,-1.0,0.0,0.0,0.0,0,0,1,0,1,1)
+                            DrawMessage(config.pressButtonDetach)
+                            if IsControlJustPressed(0,config.boatCommands) then
+                                if has_value(trailers,GetEntityModel(GetEntityAttachedTo(entity))) then
+                                    AttachEntityToEntity(entity,GetEntityAttachedTo(entity),GetEntityBoneIndexByName(GetEntityAttachedTo(entity),'misc_a'),config.offset.drop,0.0,0.0,0.0,0,0,1,0,1,1)
                                     DetachEntity(entity)
                                 end
                             end
@@ -50,33 +61,52 @@ Citizen.CreateThread(function()
                 end
             end
             if trailerEnt ~= nil then
-
+                if #(GetEntityCoords(trailerEnt) - GetEntityCoords(PlayerPedId())) < 12.0 then
                     local hit, coords, entity = RayCastGamePlayCamera(20.0)
                     if hit == 1 then
                         if GetEntityType(entity) ~= 0 then
-                            if GetEntityModel(entity) == GetHashKey('zodiac') then
-                                DrawMessage('Druk op ~g~E~w~ a bla bla')
-                                if IsControlJustPressed(0,38) then
-                                    local boatUpper = GetWorldPositionOfEntityBone(trailerEnt,GetEntityBoneIndexByName(trailerEnt,'misc_b'))
-                                    if not IsAnyVehicleNearPoint(boatUpper,1.5) then
-                                        AttachEntityToEntity(entity,trailerEnt,GetEntityBoneIndexByName(trailerEnt,'misc_b'),0.0,-1.0,-0.2,0.0,0.0,0.0,0,0,1,0,1,1)
+                            if has_value(boats,GetEntityModel(entity)) and not IsEntityAttachedToAnyVehicle(entity) then
+                                waitTime = 8
+                                DrawMessage(config.pressButtonAttach)
+                                if IsControlJustPressed(0,config.boatCommands) then
+                                    local position = {}
+                                    position['top'],position['bottom'] = false,false
+                                    local AllVehicles  = GetGamePool('CVehicle')
 
-                                    else
-                                        local boatLower = GetWorldPositionOfEntityBone(trailerEnt,GetEntityBoneIndexByName(trailerEnt,'misc_a'))
-                                        if not IsAnyVehicleNearPoint(boatLower,0.66219) then
-                                            AttachEntityToEntity(entity,trailerEnt,GetEntityBoneIndexByName(trailerEnt,'misc_a'),0.0,-1.0,-0.2,0.0,0.0,0.0,0,0,1,0,1,1)
+                                    for i=1,#AllVehicles,1 do
+                                        if  has_value(boats,GetEntityModel(AllVehicles[i])) then
+                                            if GetEntityAttachedTo(AllVehicles[i]) == trailerEnt then
+                                                if GetEntityHeightAboveGround(AllVehicles[i]) > 1.9 then
+                                                    position['top'] = true
+                                                else
+                                                    position['bottom'] = true
+                                                end
+                                            end
                                         end
                                     end
+                                    if not position['top'] then
+                                        AttachEntityToEntity(entity,trailerEnt,GetEntityBoneIndexByName(trailerEnt,'misc_b'),config.offset.top,0.0,0.0,0.0,0,0,1,0,1,1)
+                                    elseif not position['bottom'] then
+                                        AttachEntityToEntity(entity,trailerEnt,GetEntityBoneIndexByName(trailerEnt,'misc_a'),config.offset.bottom,0.0,0.0,0.0,0,0,1,0,1,1)
+                                    else
+                                        Citizen.InvokeNative(0x8509B634FBE7DA11, "STRING")
+                                        Citizen.InvokeNative(0x5F68520888E69014, config.occupied)
+                                        Citizen.InvokeNative(0x238FFE5C7B0498A6, 0, false, true, -1)
+                                        position = {}
+                                    end
+                                    AllVehicles,position,entity = nil,nil,nil
                                 end
                             end
                         end
                     end
+                end
             end
         else
             local vehCheck = GetVehiclePedIsIn(PlayerPedId(),true)
-            if GetEntityModel(vehCheck) == GetHashKey('f550swr') then
                 trailerAttached,trailerEnt = GetVehicleTrailerVehicle(vehCheck)
-            end
+                if trailerAttached == 0 then
+                    trailerEnt,trailerAttached = nil,nil
+                end
         end
     Citizen.Wait(waitTime)
     end
@@ -93,7 +123,6 @@ function RayCastGamePlayCamera(distance)
         z = cameraCoord.z + direction.z * distance
     }
     local a, b, c, d, e = GetShapeTestResult(StartShapeTestRay(cameraCoord.x, cameraCoord.y, cameraCoord.z, destination.x, destination.y, destination.z, -1, PlayerPedId(), 0))
-    DrawLine(cameraCoord.x, cameraCoord.y, cameraCoord.z, destination.x, destination.y, destination.z,255,0,0,255)
     return b, c, e
 end
 
@@ -128,3 +157,12 @@ function DrawMessage (message)
 end
 
 
+function has_value(tab, val)
+    for index, value in ipairs(tab) do
+        if value == val then
+            return true
+        end
+    end
+
+    return false
+end
