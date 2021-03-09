@@ -33,5 +33,6 @@ game 'gta5'
 
 description 'Redneck Modifications | Double trailer Script'
 authors 'Nick-VD'
+
 client_script 'client.lua'
 shared_script 'config.lua'

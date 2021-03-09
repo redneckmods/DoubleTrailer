@@ -9,6 +9,12 @@ for k,v in ipairs(config.boats) do
     table.insert(boats, GetHashKey(v))
 end
 
+local lastTruck = 0
+local debug = false
+local vehs = {}
+for k,v in ipairs(config.water_vehicles) do
+    table.insert(vehs, GetHashKey(v))
+end
 
 
 RegisterCommand(config.spawnCommand, function(source, args, rawCommand)
@@ -23,7 +29,7 @@ RegisterCommand(config.spawnCommand, function(source, args, rawCommand)
                 waiting = waiting + 100
                 Citizen.Wait(100)
                 if waiting > 5000 then
-                    ShowNotification(config.safetySpawn)
+                    ShowHelpText(config.safetySpawn, "REDNECK_SAFETYSPAWN")
                     break
                 end
             end
@@ -49,7 +55,7 @@ Citizen.CreateThread(function()
                     if has_value(boats,GetEntityModel(entity)) then
                         waitTime = 8
                         if IsEntityAttachedToAnyVehicle(entity) then
-                            DrawMessage(config.pressButtonDetach)
+                            ShowHelpText(config.pressButtonDetach, "REDNECK_DETACH")
                             if IsControlJustPressed(0,config.boatCommands) then
                                 if has_value(trailers,GetEntityModel(GetEntityAttachedTo(entity))) then
                                     AttachEntityToEntity(entity,GetEntityAttachedTo(entity),GetEntityBoneIndexByName(GetEntityAttachedTo(entity),'misc_a'),config.offset.drop,0.0,0.0,0.0,0,0,1,0,1,1)
@@ -67,7 +73,7 @@ Citizen.CreateThread(function()
                         if GetEntityType(entity) ~= 0 then
                             if has_value(boats,GetEntityModel(entity)) and not IsEntityAttachedToAnyVehicle(entity) then
                                 waitTime = 8
-                                DrawMessage(config.pressButtonAttach)
+                                ShowHelpText(config.pressButtonAttach, "REDNECK_ATTACH")
                                 if IsControlJustPressed(0,config.boatCommands) then
                                     local position = {}
                                     position['top'],position['bottom'] = false,false
@@ -89,9 +95,7 @@ Citizen.CreateThread(function()
                                     elseif not position['bottom'] then
                                         AttachEntityToEntity(entity,trailerEnt,GetEntityBoneIndexByName(trailerEnt,'misc_a'),config.offset.bottom,0.0,0.0,0.0,0,0,1,0,1,1)
                                     else
-                                        Citizen.InvokeNative(0x8509B634FBE7DA11, "STRING")
-                                        Citizen.InvokeNative(0x5F68520888E69014, config.occupied)
-                                        Citizen.InvokeNative(0x238FFE5C7B0498A6, 0, false, true, -1)
+                                        ShowText(config.occupied)
                                         position = {}
                                     end
                                     AllVehicles,position,entity = nil,nil,nil
@@ -109,6 +113,59 @@ Citizen.CreateThread(function()
                 end
         end
     Citizen.Wait(waitTime)
+    end
+end)
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0)
+        local letSleep = true
+        local ped = PlayerPedId()
+        local veh = GetVehiclePedIsIn(ped, true)
+        local pos = GetEntityCoords(ped)
+        local vehLast = GetPlayersLastVehicle()
+        local distanceToVeh = #(pos - GetEntityCoords(lastTruck))
+
+        if veh and has_value(vehs, GetEntityModel(veh)) then
+           lastTruck = veh
+        end
+
+        if not IsPedInAnyVehicle(ped, true) then
+            if distanceToVeh < 6 then
+                letSleep = false
+                ShowHelpText(config.label, "REDNECK_TRUNKLIGHT")
+                if IsControlJustPressed(0, 51) then 
+                    if GetVehicleDoorAngleRatio(lastTruck, 5) > 0 then
+                        SetVehicleDoorShut(lastTruck, 5, false)
+                        if debug then
+                            ShowText("[Vehicle] Trunk Closed.")
+                        end
+                    else
+                        SetVehicleDoorOpen(lastTruck, 5, false, false)
+                        if debug then
+                            ShowText("[Vehicle] Trunk Opened.")
+                        end
+                    end
+                end
+
+                if IsControlJustPressed(0, 47) then 
+                    if GetVehicleDoorAngleRatio(lastTruck, 4) > 0 then
+                        SetVehicleDoorShut(lastTruck, 4, false)
+                        if debug then
+                            ShowText("[Vehicle] Light down.")
+                        end
+                    else
+                        SetVehicleDoorOpen(lastTruck, 4, false, false)
+                        if debug then
+                            ShowText("[Vehicle] Light up.")
+                        end
+                    end
+                end
+            end
+        end
+        if letSleep then
+            Citizen.Wait(500)
+        end
     end
 end)
 
@@ -156,12 +213,24 @@ function DrawMessage (message)
     DrawText(0.035, 0.755)
 end
 
+function ShowText(text)
+    SetNotificationTextEntry("STRING")
+    AddTextComponentSubstringPlayerName(text)
+    DrawNotification(true, true)
+end
+
+function ShowHelpText(text, labelname)
+    AddTextEntry(labelname, text)
+    BeginTextCommandDisplayHelp(labelname)
+    EndTextCommandDisplayHelp(0, 0, 1, -1)
+end
+
 
 function has_value(tab, val)
     for index, value in ipairs(tab) do
         if value == val then
             return true
-        end
+        end 
     end
 
     return false
