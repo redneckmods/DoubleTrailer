@@ -1,11 +1,15 @@
-Redneck Double Trailer script
+**What is it?** (this is still in beta stages, feel free to submit any issues or PRs)
+This is a script to work with Redneck's Water Rescues and his Double Trailer that comes with it.
 
-Still in Beta
+**Functionality**
+- Store the "zodiac" boat from gta5mods on the bottom and top of the trailer. (can attach and detach)
+- Able to open the comparment doors from outside the vehicle.
+- Able to raise/lower the front flood lights from outside the vehicle.
 
-https://github.com/brentN5/bt-target
+**Preview Video**
+*in the works*
 
-
-you look at the boat you want to detach and press E (says in the bottom left corner)
-To attach back make sure the trailer is attached to a swr, get in the driver seat, get out and look at the boat
-it will be attached to the trailer
-by pressing e
+**Contributors** 
+- raycast system from https://github.com/brentN5/bt-target
+- eevee911
+- IceTheDev
