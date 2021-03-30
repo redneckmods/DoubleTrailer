@@ -1,26 +1,26 @@
 local trailerEnt = nil
 local trailers = {}
 for k,v in ipairs(config.trailers) do
-    table.insert(trailers, GetHashKey(v))
+    table.insert(trailers, v)
 end
 
 local boats = {}
 for k,v in ipairs(config.boats) do
-    table.insert(boats, GetHashKey(v))
+    table.insert(boats, v)
 end
 
 local lastTruck = 0
 local debug = false
 local vehs = {}
 for k,v in ipairs(config.water_vehicles) do
-    table.insert(vehs, GetHashKey(v))
+    table.insert(vehs, v)
 end
 
 
 RegisterCommand(config.spawnCommand, function(source, args, rawCommand)
     local x,y,z = table.unpack(GetOffsetFromEntityInWorldCoords(PlayerPedId(), 0.0, 8.0, 0.5))
-    local vehiclehash = GetHashKey(config.default.trailer)
-    local boatHash  = GetHashKey(config.default.boat)
+    local vehiclehash = config.default.trailer
+    local boatHash  = config.default.boat
         RequestModel(vehiclehash)
         RequestModel(boatHash)
         Citizen.CreateThread(function() 

@@ -2,23 +2,23 @@ config = {}
 
 config = {
     trailers = {
-        'doubletrailer',
+        `doubletrailer`,
     },
     boats = {
-        'zodiac',
+        `zodiac`,
     },
     water_vehicles = {
-        '20ramswr',
-        '20ramcwr',
-        '16ramswr',
-        '16ramcwr',
-        'f550ramswr',
-        'f550ramcwr',
+        `20ramswr`,
+        `20ramcwr`,
+        `16ramswr`,
+        `16ramcwr`,
+        `f550ramswr`,
+        `f550ramcwr`,
     },
     spawnCommand = 'dblTrailerTest', -- trailer spawn with 2 boats on it 
     default = {
-        trailer = 'doubletrailer',
-        boat = 'zodiac'
+        trailer = `doubletrailer`,
+        boat = `zodiac`
     },
     label = "~b~Instructional Buttons: ~w~[~r~Beta Phase~w~]~n~~w~Press ~INPUT_CONTEXT~ to open~w~ compartment doors.~n~~w~Press ~INPUT_DETONATE~ to raise/lower~w~ flood lights.",
     occupied = '~r~Error: ~w~All spaces are occupied.',
